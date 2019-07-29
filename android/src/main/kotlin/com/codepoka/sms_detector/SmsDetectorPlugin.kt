@@ -9,7 +9,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -17,16 +16,6 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import android.provider.Telephony
 import android.telephony.SmsMessage
-import android.widget.Toast
-import android.support.v4.app.NotificationCompat.getExtras
-import android.os.Bundle
-import android.content.ContentValues.TAG
-
-
-
-
-
-
 
 
 class SmsDetectorPlugin(var registrar: Registrar): MethodCallHandler {
@@ -46,13 +35,16 @@ class SmsDetectorPlugin(var registrar: Registrar): MethodCallHandler {
       if (ContextCompat.checkSelfPermission(registrar.activeContext(), Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED) {
         if(_result != null){ returnResult()}
       }
+      else{
+        if(_result != null) _result?.success("permissionDenied")
+      }
       return@addRequestPermissionsResultListener true
     }
 
     //Sms receiver
     _receiver = SMSReceiver(object: OnSmsReceiveListener {
-      override fun onReceive(sms: SmsMessage) {
-        _result?.success(sms.displayMessageBody)
+      override fun onReceive(sms: String?) {
+        _result?.success(sms)
       }
     })
   }
@@ -77,7 +69,7 @@ class SmsDetectorPlugin(var registrar: Registrar): MethodCallHandler {
       try {
         registrar.activeContext().unregisterReceiver(_receiver)
       }catch (ex:Exception){
-        print(ex)
+        _result?.success("error")
       }
     }
     else {
@@ -89,7 +81,7 @@ class SmsDetectorPlugin(var registrar: Registrar): MethodCallHandler {
     try {
       registrar.activeContext().registerReceiver(_receiver, IntentFilter("android.provider.Telephony.SMS_RECEIVED"))
     }catch (e:Exception){
-      print(e)
+      _result?.success("error")
     }
   }
 }
@@ -109,14 +101,14 @@ class SMSReceiver(var smsReceiveListener:OnSmsReceiveListener): BroadcastReceive
           SmsMessage.createFromPdu(pdusObj[0] as ByteArray)
         }
 
-        smsReceiveListener.onReceive(currentMessage)
+        smsReceiveListener.onReceive(currentMessage.displayMessageBody)
       } //
     }catch (e:Exception){
-      print(e)
+      smsReceiveListener.onReceive(null)
     }
   }
 }
 
 interface OnSmsReceiveListener {
-  fun onReceive(sms: SmsMessage)
+  fun onReceive(sms: String?)
 }

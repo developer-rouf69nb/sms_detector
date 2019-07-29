@@ -16,6 +16,6 @@ void main() {
   });
 
   test('getPlatformVersion', () async {
-    expect(await SmsDetector.waitForSmsReceive, '42');
+    expect(SmsDetector.waitForSms, '42');
   });
 }

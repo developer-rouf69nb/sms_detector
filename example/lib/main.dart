@@ -17,9 +17,12 @@ class _MyAppState extends State<MyApp> {
     retrieveNewSms();
   }
 
-  retrieveNewSms() async {
-    _smsBody = await SmsDetector.waitForSmsReceive();
-    setState(() {});
+  retrieveNewSms()  {
+    SmsDetector.waitForSms().then((x){
+      setState(() {_smsBody = x;});
+    }).catchError((e){
+      print(e);
+    });
   }
 
 
